@@ -1,13 +1,12 @@
 import requests
 from pprint import pprint
 from json import dump
+from tqdm import tqdm
+import time
 
 
-with open('vk_token.txt') as f:
-    vk_token = f.read().strip()
-
-with open('ya_token.txt') as f:
-    ya_token = f.read().strip()
+vk_token = input('Введите токен ВКонтакте: ')
+ya_token = input('Введите токен Яндекс Диска: ')
 
 class VkUser:
     url = 'https://api.vk.ru/method/'
@@ -15,10 +14,10 @@ class VkUser:
     def __init__(self, token, version):
         self.params = {'access_token': token, 'v': version}
 
-    def photos_get(self, owner_id):
+    def photos_get(self, owner_id, album_id='profile'):
         '''получаем фотографии с профиля ВК по id'''
         url = self.url + 'photos.get/'
-        params = {**self.params, 'owner_id': owner_id, 'album_id': 'profile', 'rev': 0, 'extended': 1, 'count': 10}
+        params = {**self.params, 'owner_id': owner_id, 'album_id': album_id, 'rev': 0, 'extended': 1, 'count': 10}
         req = requests.get(url=url, params=params)
         if req.status_code == 200:
             return req.json()
@@ -45,16 +44,18 @@ class YaUpLoader:
             response = requests.get(file_path)
             f.write(response.content)
         response2 = requests.put(url, open(f'photos/{name_photo}.jpg', 'rb'))
-        print('Успешно!') if response2.status_code == 201 else print('Ошибка!')
+        for _ in tqdm(range(100)):  # прогресс бар
+            time.sleep(0.05)
+        print('Фото загружено!') if response2.status_code == 201 else print('Ошибка!')
 
     def loads_photos_from_vk(self, photos, count=5):
         photos_list, count_result = [], 0
         for el in photos['response']['items']:
             count -= 1
             count_result += 1
-            new_name = el['likes']['count']
+            new_name = str(el['likes']['count'])
             if new_name in self.added_photos:  # проверяем, что фото не совпадают по лайкам
-                new_name = new_name + '_' + el['date']  # иначе в название добавим дату
+                new_name = new_name + '_' + str(el['date'])  # иначе в название добавим дату
             self.added_photos.append(new_name)
             largest_photo = max(el['sizes'], key=lambda x: x['type'])  # максимальный размер фото
             photos_list.append({'file_name': f'{new_name}.jpg', 'size': largest_photo['type']})
@@ -77,8 +78,7 @@ class YaUpLoader:
 
 
 obj = VkUser(vk_token, '5.199')
-# uploader = YaUpLoader(ya_token)
-# uploader.new_folder_yadisk()
+uploader = YaUpLoader(ya_token)
+uploader.new_folder_yadisk()
 my_photos = obj.photos_get('1')
-pprint(my_photos)
-# uploader.loads_photos_from_vk(my_photos)
+uploader.loads_photos_from_vk(my_photos)
