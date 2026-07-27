@@ -77,8 +77,9 @@ class YaUpLoader:
         print('Папка создана!') if req.status_code == 201 else print('Ошибка!')
 
 
-obj = VkUser(vk_token, '5.199')
-uploader = YaUpLoader(ya_token)
-uploader.new_folder_yadisk()
-my_photos = obj.photos_get('1')
-uploader.loads_photos_from_vk(my_photos)
+if __name__ == '__main__':
+    obj = VkUser(vk_token, '5.199')
+    uploader = YaUpLoader(ya_token)
+    uploader.new_folder_yadisk()
+    my_photos = obj.photos_get('1')
+    uploader.loads_photos_from_vk(my_photos, 10)
